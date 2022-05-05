@@ -7,8 +7,18 @@
 
 UTTMovementComponent::UTTMovementComponent()
 {
-	//tick
+	PrimaryComponentTick.bCanEverTick = true;
+
+	MovementConstraints = FVector2D(-99999, 99999);
 }
+
+void UTTMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	FindMovementConstraint();
+}
+
 
 void UTTMovementComponent::SetVelocity(float NewVelocity)
 {
@@ -28,16 +38,16 @@ float UTTMovementComponent::CalcThrottle(float DeltaTime)
 	auto NewLocation = CurrentLocation + Throttle;
 	NewLocation = FMath::Clamp(NewLocation, MovementConstraints.X, MovementConstraints.Y);
 
-	Throttle = CurrentLocation - NewLocation;
+	Throttle = NewLocation - CurrentLocation;
 
 	return Throttle;
 }
 
 void UTTMovementComponent::ExecMovement(float Throttle)
 {
-	if (FMath::IsNearlyEqual(Throttle, 0)) return;
+	if (FMath::IsNearlyEqual(Throttle, 0.f)) return;
 
-	const auto Offset = FVector(Throttle, 0, 0);
+	const auto Offset = FVector(Throttle, 0.f, 0.f);
 	GetOwner()->AddActorLocalOffset(Offset);
 }
 
@@ -55,7 +65,5 @@ void UTTMovementComponent::FindMovementConstraint()
 	//TODO
 	//GetWorld()->GetFirstPlayerController()->DeprojectScreenPositionToWorld(0, 0, LeftLocation, WorldDirection);
 	
-	
-	//how get on server
-	//calculate on client and send to server?
+	MovementConstraints = FVector2D(-600.f, 600.f);
 }

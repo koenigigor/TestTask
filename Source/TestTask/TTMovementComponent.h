@@ -3,18 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/MovementComponent.h"
+#include "Components/ActorComponent.h"
 #include "TTMovementComponent.generated.h"
 
 /**
  * 
  */
 UCLASS(meta=(BlueprintSpawnableComponent))
-class TESTTASK_API UTTMovementComponent : public UMovementComponent
+class TESTTASK_API UTTMovementComponent : public UActorComponent
 {
 	GENERATED_BODY()
 public:
 	UTTMovementComponent();
+
+	virtual void BeginPlay() override;
 	
 	/** Set pawn movement velocity */
 	UFUNCTION(BlueprintCallable)
