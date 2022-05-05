@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(meta=(BlueprintSpawnableComponent))
 class TESTTASK_API UTTMovementComponent : public UMovementComponent
 {
 	GENERATED_BODY()
@@ -21,9 +21,9 @@ public:
 	void SetVelocity(float NewVelocity);
 
 	/** return result velocity in frame */
-	void CalcThrottle(float DeltaTime);
+	float CalcThrottle(float DeltaTime);
 	
-	void ExecMovement();
+	void ExecMovement(float Throttle);
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -33,7 +33,6 @@ public:
 	
 private:
 	float Velocity = 0.f;
-	float Throttle = 0.f;
 
 public:
 	/* left and right movement constraint */

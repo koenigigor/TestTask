@@ -3,6 +3,8 @@
 
 #include "TTMovementComponent.h"
 
+#include "Kismet/GameplayStatics.h"
+
 UTTMovementComponent::UTTMovementComponent()
 {
 	//tick
@@ -13,14 +15,25 @@ void UTTMovementComponent::SetVelocity(float NewVelocity)
 	Velocity = NewVelocity;
 }
 
-void UTTMovementComponent::CalcThrottle(float DeltaTime)
+float UTTMovementComponent::CalcThrottle(float DeltaTime)
 {
-	if (FMath::IsNearlyEqual(Velocity, 0.f)) return;
+	float Throttle = 0.f;
+
+	if (FMath::IsNearlyEqual(Velocity, 0.f)) return Throttle;
 	
 	Throttle = Velocity * DeltaTime;
+
+	//clamp throttle
+	const auto CurrentLocation = GetOwner()->GetActorLocation().X;
+	auto NewLocation = CurrentLocation + Throttle;
+	NewLocation = FMath::Clamp(NewLocation, MovementConstraints.X, MovementConstraints.Y);
+
+	Throttle = CurrentLocation - NewLocation;
+
+	return Throttle;
 }
 
-void UTTMovementComponent::ExecMovement()
+void UTTMovementComponent::ExecMovement(float Throttle)
 {
 	if (FMath::IsNearlyEqual(Throttle, 0)) return;
 
@@ -33,19 +46,15 @@ void UTTMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	CalcThrottle(Throttle);
-	ExecMovement();
+	const auto Throttle = CalcThrottle(DeltaTime);
+	ExecMovement(Throttle);
 }
 
 void UTTMovementComponent::FindMovementConstraint()
 {
 	//TODO
-	//get players screen 
-
-	//get right edge
-
-	//get left edge
-
+	//GetWorld()->GetFirstPlayerController()->DeprojectScreenPositionToWorld(0, 0, LeftLocation, WorldDirection);
+	
 	
 	//how get on server
 	//calculate on client and send to server?
