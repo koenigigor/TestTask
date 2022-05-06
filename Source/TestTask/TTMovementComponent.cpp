@@ -26,7 +26,10 @@ void UTTMovementComponent::BeginPlay()
 
 	SetComponentTickEnabled(false);
 
-	FindMovementConstraint();
+	//delay for posses and set camera
+	//todo AcknowledgePossession delegate, of setup camera delegate
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UTTMovementComponent::FindMovementConstraint, 1.f);
 }
 
 
