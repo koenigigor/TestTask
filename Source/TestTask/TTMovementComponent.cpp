@@ -18,8 +18,6 @@ UTTMovementComponent::UTTMovementComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	
 	SetIsReplicatedByDefault(true);
-
-	MovementConstraints = FVector2D(-99999, 99999);
 }
 
 void UTTMovementComponent::BeginPlay()
@@ -143,8 +141,31 @@ void UTTMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UTTMovementComponent::FindMovementConstraint()
 {
-	//TODO
-	//GetWorld()->GetFirstPlayerController()->DeprojectScreenPositionToWorld(0, 0, LeftLocation, WorldDirection);
-	
+	//hardcode value if fail,	cant get camera on dedicated, etc
 	MovementConstraints = FVector2D(-600.f, 600.f);
+	
+	if (GetWorld()->GetNetMode() == NM_DedicatedServer)	return;
+	
+	const auto PlayerController = GetOwner()->GetInstigatorController<APlayerController>();
+	if (!PlayerController) return;
+
+	
+	const FVector CameraLocation = PlayerController->PlayerCameraManager->GetCameraLocation();
+	const float CameraFow = PlayerController->PlayerCameraManager->GetFOVAngle();
+	const FVector Plane = GetOwner()->GetActorLocation();
+	
+	//формула катета по другому катету и тангнсу угла
+	const float CameraPlaneLeg = FMath::Abs(CameraLocation.Z - Plane.Z);
+	const float ViewAngle = CameraFow / 2.f;
+	const float PlaneLeg = FMath::Tan(ViewAngle) * CameraPlaneLeg;
+
+	MovementConstraints = FVector2D(CameraLocation.X - PlaneLeg, CameraLocation.X + PlaneLeg);
+
+	//draw debug
+	FVector Sphere1 = FVector(MovementConstraints.X, CameraLocation.Y, Plane.Z);
+	FVector Sphere2 = FVector(MovementConstraints.Y, CameraLocation.Y, Plane.Z);
+	DrawDebugSphere(GetWorld(), Sphere1, 300.f, 12, FColor::Red,
+		false, 20, 0, 5);
+	DrawDebugSphere(GetWorld(), Sphere2, 300.f, 12, FColor::Red,
+		false, 20, 0, 5);
 }
