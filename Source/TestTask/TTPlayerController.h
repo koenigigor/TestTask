@@ -13,5 +13,9 @@ UCLASS()
 class TESTTASK_API ATTPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+public:
+	virtual void AcknowledgePossession(APawn* P) override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BP_AcknowledgePossession(APawn* NewPawn);
 };

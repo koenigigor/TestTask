@@ -14,6 +14,8 @@ class TESTTASK_API UTTMovementComponent : public UActorComponent
 {
 	GENERATED_BODY()
 public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	UTTMovementComponent();
 
 	virtual void BeginPlay() override;
@@ -22,19 +24,31 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetVelocity(float NewVelocity);
 
-	/** return result velocity in frame */
-	float CalcThrottle(float DeltaTime);
-	
-	void ExecMovement(float Throttle);
+private:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetVelocity(float NewVelocity);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void SetVelocity_Internal(float NewVelocity);
+
+	
+	/** return result velocity in frame */
+	void CalcThrottle(float DeltaTime);
+	
+	void ExecMovement();
+
+public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	/** execute on postregistercomponent
-	 *	find left and right movement constraints */
+	/** find left and right movement constraints
+	 *	for move within the screen */
 	void FindMovementConstraint();
 	
 private:
+	UPROPERTY(Replicated)
 	float Velocity = 0.f;
+
+	float Throttle = 0.f;
 
 public:
 	/* left and right movement constraint */
