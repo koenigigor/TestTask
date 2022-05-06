@@ -26,17 +26,17 @@ void UTTMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SetComponentTickEnabled(false);
+
 	FindMovementConstraint();
 }
 
 
 void UTTMovementComponent::SetVelocity(float NewVelocity)
 {
-	if (FMath::IsNearlyEqual(Velocity, NewVelocity) && FMath::IsNearlyEqual(PreviousVelocity, Velocity))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Set velocity returned"))
-		return;
-	} 
+	//if (FMath::IsNearlyEqual(Velocity, NewVelocity) && FMath::IsNearlyEqual(PreviousVelocity, Velocity)) return;
+
+	if (FMath::IsNearlyEqual(Velocity, NewVelocity)) return;
 	
 	if (GetOwnerRole() == ROLE_Authority)	
 		SetVelocity_Internal(NewVelocity);
@@ -47,18 +47,18 @@ void UTTMovementComponent::SetVelocity(float NewVelocity)
 
 void UTTMovementComponent::AddMovementInput(float Value)
 {
+	//ignore input if is 0, also check previous for determine if we moved directly by SetVelocity
 	if (FMath::IsNearlyEqual(Value, 0.f) && FMath::IsNearlyEqual(PreviousMovementInput, Value)) return;
 	PreviousMovementInput = Value;
+
 	
 	//calculate velocity from input, and set is as velocity
-	
-	float IntendedVelocity = Value * GetWorld()->GetDeltaSeconds() * 600.f;
-	
-	//UE_LOG(LogTemp, Warning, TEXT("Receive movement input %f"), IntendedVelocity)
+	float IntendedVelocity = Value * 50.f;
+	IntendedVelocity = FMath::RoundHalfToEven(IntendedVelocity);
 
-	//server add movement input unreliable
+
 	SetVelocity(IntendedVelocity);
-}  //TODO
+}
 
 void UTTMovementComponent::ServerSetVelocity_Implementation(float NewVelocity)
 {
@@ -72,12 +72,11 @@ bool UTTMovementComponent::ServerSetVelocity_Validate(float NewVelocity)
 
 void UTTMovementComponent::SetVelocity_Internal_Implementation(float NewVelocity)
 {
-	//PreviousVelocity == NewVelocity == 0.f 
-	if (FMath::IsNearlyEqual(PreviousVelocity, NewVelocity) && FMath::IsNearlyEqual(NewVelocity, 0.f))
+	if (FMath::IsNearlyEqual(NewVelocity, 0.f))
 	{
 		//stop movement
 		SetComponentTickEnabled(false);
-		UE_LOG(LogTemp, Error, TEXT("Stop Movement"))
+		UE_LOG(LogTemp, Display, TEXT("Pawn %s, Stop Movement"), *GetOwner()->GetName())
 	}
 	else
 	{
@@ -85,13 +84,13 @@ void UTTMovementComponent::SetVelocity_Internal_Implementation(float NewVelocity
 		if (!IsComponentTickEnabled())
 		{
 			SetComponentTickEnabled(true);
-			UE_LOG(LogTemp, Error, TEXT("Start Movement"))
+			UE_LOG(LogTemp, Display, TEXT("Pawn %s, Start Movement"), *GetOwner()->GetName())
 		}
 	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("SetVelocity called with %f"), NewVelocity)
+	VelocityChangeMessage();
 
-	PreviousVelocity = NewVelocity;
+	PreviousVelocity = Velocity;
 	Velocity = NewVelocity;
 }
 
@@ -122,18 +121,22 @@ void UTTMovementComponent::ExecMovement()
 	GetOwner()->AddActorLocalOffset(Offset);
 }
 
+void UTTMovementComponent::VelocityChangeMessage() const
+{
+	//UE_LOG(LogTemp, Display, TEXT("Movement velocity changed, old velocity is %f, new velocity is %f"), PreviousVelocity, Velocity)
+
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		FString Message = "Movement velocity changed, old velocity is " + FString::SanitizeFloat(PreviousVelocity) + ", new velocity is " + FString::SanitizeFloat(Velocity);
+		UKismetSystemLibrary::PrintString(this, Message, true, true, FLinearColor::Green, 5);
+	}
+}
+
 void UTTMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
+                                         FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	UE_LOG(LogTemp, Warning, TEXT("Movement velosity changed, old velocity is %f, new velocity is %f"), PreviousVelocity, Velocity)
-	if (FMath::IsNearlyEqual(PreviousVelocity, Velocity) && FMath::IsNearlyEqual(Velocity, 0.f))
-	{
-		//stop movement
-		SetComponentTickEnabled(false);
-		UE_LOG(LogTemp, Error, TEXT("Stop Movement"))
-	}
 	CalcThrottle(DeltaTime);
 	ExecMovement();
 }

@@ -7,7 +7,8 @@
 #include "TTMovementComponent.generated.h"
 
 /**
- * 
+ * Simple movement component, move only by X axis
+ * control setup by SetVelocity and AddMovementInput
  */
 UCLASS(meta=(BlueprintSpawnableComponent))
 class TESTTASK_API UTTMovementComponent : public UActorComponent
@@ -41,6 +42,9 @@ private:
 	
 	void ExecMovement();
 
+	/** Print velocity change message (Task 4) */
+	void VelocityChangeMessage() const;
+
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -56,8 +60,7 @@ private:
 	float PreviousVelocity = 0.f;
 
 	float Throttle = 0.f;
-
-	//keep previous movement input for determine is speed setup by AddMovementInput or by SetVelocity
+	
 	float PreviousMovementInput = 0.f;
 
 public:
