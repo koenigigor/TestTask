@@ -32,12 +32,33 @@ void UTTMovementComponent::BeginPlay()
 
 void UTTMovementComponent::SetVelocity(float NewVelocity)
 {
+	if (FMath::IsNearlyEqual(Velocity, NewVelocity) && FMath::IsNearlyEqual(PreviousVelocity, Velocity))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Set velocity returned"))
+		return;
+	} 
+	
 	if (GetOwnerRole() == ROLE_Authority)	
 		SetVelocity_Internal(NewVelocity);
 
 	if (GetOwnerRole() == ROLE_AutonomousProxy)
 		ServerSetVelocity(NewVelocity);
 }
+
+void UTTMovementComponent::AddMovementInput(float Value)
+{
+	if (FMath::IsNearlyEqual(Value, 0.f) && FMath::IsNearlyEqual(PreviousMovementInput, Value)) return;
+	PreviousMovementInput = Value;
+	
+	//calculate velocity from input, and set is as velocity
+	
+	float IntendedVelocity = Value * GetWorld()->GetDeltaSeconds() * 600.f;
+	
+	//UE_LOG(LogTemp, Warning, TEXT("Receive movement input %f"), IntendedVelocity)
+
+	//server add movement input unreliable
+	SetVelocity(IntendedVelocity);
+}  //TODO
 
 void UTTMovementComponent::ServerSetVelocity_Implementation(float NewVelocity)
 {
@@ -51,6 +72,26 @@ bool UTTMovementComponent::ServerSetVelocity_Validate(float NewVelocity)
 
 void UTTMovementComponent::SetVelocity_Internal_Implementation(float NewVelocity)
 {
+	//PreviousVelocity == NewVelocity == 0.f 
+	if (FMath::IsNearlyEqual(PreviousVelocity, NewVelocity) && FMath::IsNearlyEqual(NewVelocity, 0.f))
+	{
+		//stop movement
+		SetComponentTickEnabled(false);
+		UE_LOG(LogTemp, Error, TEXT("Stop Movement"))
+	}
+	else
+	{
+		//start movement if stopped
+		if (!IsComponentTickEnabled())
+		{
+			SetComponentTickEnabled(true);
+			UE_LOG(LogTemp, Error, TEXT("Start Movement"))
+		}
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("SetVelocity called with %f"), NewVelocity)
+
+	PreviousVelocity = NewVelocity;
 	Velocity = NewVelocity;
 }
 
@@ -86,6 +127,13 @@ void UTTMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	UE_LOG(LogTemp, Warning, TEXT("Movement velosity changed, old velocity is %f, new velocity is %f"), PreviousVelocity, Velocity)
+	if (FMath::IsNearlyEqual(PreviousVelocity, Velocity) && FMath::IsNearlyEqual(Velocity, 0.f))
+	{
+		//stop movement
+		SetComponentTickEnabled(false);
+		UE_LOG(LogTemp, Error, TEXT("Stop Movement"))
+	}
 	CalcThrottle(DeltaTime);
 	ExecMovement();
 }

@@ -24,6 +24,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetVelocity(float NewVelocity);
 
+	/** Client add movement from axis event by this */
+	UFUNCTION(BlueprintCallable)
+	void AddMovementInput(float Value);
+
 private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSetVelocity(float NewVelocity);
@@ -48,7 +52,13 @@ private:
 	UPROPERTY(Replicated)
 	float Velocity = 0.f;
 
+	//velocity on previous frame
+	float PreviousVelocity = 0.f;
+
 	float Throttle = 0.f;
+
+	//keep previous movement input for determine is speed setup by AddMovementInput or by SetVelocity
+	float PreviousMovementInput = 0.f;
 
 public:
 	/* left and right movement constraint */
