@@ -8,4 +8,6 @@ void ATTPlayerController::AcknowledgePossession(APawn* P)
 	Super::AcknowledgePossession(P);
 
 	BP_AcknowledgePossession(P);
+
+	OnPossessClient.Broadcast(P);
 }
