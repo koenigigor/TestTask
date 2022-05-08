@@ -147,7 +147,7 @@ void UTTMovementComponent::FindMovementConstraint()
 	//hardcode value if fail,	cant get camera on dedicated, etc
 	MovementConstraints = FVector2D(-600.f, 600.f);
 	
-	if (GetWorld()->GetNetMode() == NM_DedicatedServer)	return;
+	if (GetWorld()->GetNetMode() != NM_Standalone)	return;
 	
 	const auto PlayerController = GetOwner()->GetInstigatorController<APlayerController>();
 	if (!PlayerController) return;
@@ -158,17 +158,38 @@ void UTTMovementComponent::FindMovementConstraint()
 	const FVector Plane = GetOwner()->GetActorLocation();
 	
 	//формула катета по другому катету и тангнсу угла
-	const float CameraPlaneLeg = FMath::Abs(CameraLocation.Z - Plane.Z);
+	const float CameraLeg = FMath::Abs(CameraLocation.Z - Plane.Z);
 	const float ViewAngle = CameraFow / 2.f;
-	const float PlaneLeg = FMath::Tan(ViewAngle) * CameraPlaneLeg;
+	const float PlaneLeg = FMath::Tan(FMath::DegreesToRadians(ViewAngle)) * CameraLeg;
 
-	MovementConstraints = FVector2D(CameraLocation.X - PlaneLeg, CameraLocation.X + PlaneLeg);
+	
+	//offset from viewport center to edge
+	int32 ViewportX = 0;
+	int32 ViewportY = 0;
+	PlayerController->GetViewportSize(ViewportX, ViewportY);
+
+	FVector2D ScreenPosLeft = FVector2D(0, ViewportY/2);
+	FVector WorldPositionLeft;
+	FVector WorldDirectionLeft;
+	UGameplayStatics::DeprojectScreenToWorld(PlayerController, ScreenPosLeft, WorldPositionLeft, WorldDirectionLeft);
+
+	const float Offset = CameraLocation.X - WorldPositionLeft.X;
+	
+	
+	MovementConstraints = FVector2D(CameraLocation.X - PlaneLeg - Offset, CameraLocation.X + PlaneLeg + Offset);
+	
 
 	//draw debug
-	FVector Sphere1 = FVector(MovementConstraints.X, CameraLocation.Y, Plane.Z);
-	FVector Sphere2 = FVector(MovementConstraints.Y, CameraLocation.Y, Plane.Z);
-	DrawDebugSphere(GetWorld(), Sphere1, 300.f, 12, FColor::Red,
-		false, 20, 0, 5);
-	DrawDebugSphere(GetWorld(), Sphere2, 300.f, 12, FColor::Red,
-		false, 20, 0, 5);
+	FVector LeftPoint = FVector(MovementConstraints.X, CameraLocation.Y, Plane.Z);
+	FVector RightPoint = FVector(MovementConstraints.Y, CameraLocation.Y, Plane.Z);
+
+	DrawDebugPoint(GetWorld(), LeftPoint, 30, FColor::Green, false, 20, 0);
+	DrawDebugCircle(GetWorld(), LeftPoint, 100.f, 44, FColor::Cyan,
+		false, 20.f, 0, 5,
+		FVector::ForwardVector, FVector::RightVector);
+
+	DrawDebugPoint(GetWorld(), RightPoint, 30, FColor::Green, false, 20, 0);
+	DrawDebugCircle(GetWorld(), RightPoint, 100.f, 44, FColor::Cyan,
+		false, 20.f, 0, 5,
+		FVector::ForwardVector, FVector::RightVector);	
 }
